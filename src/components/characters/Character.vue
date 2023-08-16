@@ -1,7 +1,7 @@
 <template>
-    <router-link :to="mode === 'wide' ? '' : '/character/' + data.id">
+    <router-link v-if="data" :to="mode === 'wide' ? '' : '/character/' + data.id">
         <div :class="'character character-' + mode">
-            <img class="character-picture">
+            <img class="character-picture" :src="data.image">
             <div class="character-info">
                 <div class="character-name">{{ data.name }}</div>
                 <div class="character-details">
@@ -9,16 +9,17 @@
                     <span class="character-status">{{ data.status }}</span>
                 </div>
                 <div v-if="mode === 'wide'" class="character-location">
-                    Last known location: <span>{{ data.location }}</span>
+                    Last known location: <span>{{ data.location.name }}</span>
                 </div>
                 <div v-if="mode === 'wide'" class="character-episode">
-                    First seen in: <span>{{ data.episode }}</span>
+                    First seen in: <span>{{ data.episodeName }}</span>
                 </div>
                 <button v-if="store.getters.isFavorite(data.id)" class="character-remove-from-fav" @click.prevent="() => removeFromFavorites(data)">Remove from Favorites</button>
                 <button v-else class="character-add-to-fav" @click.prevent="() => addToFavorites(data)">Add to Favorites</button>
             </div>
         </div>
     </router-link>
+    <div v-else class="character-loading">Loading...</div>
 </template>
 
 <script setup>

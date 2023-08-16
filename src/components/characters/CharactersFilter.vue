@@ -39,6 +39,7 @@
     store.dispatch('setNameFilter', search.value);
     router.push('/characters/1');
   }
+
 </script>
 
 

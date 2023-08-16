@@ -1,6 +1,7 @@
 <template>
-  <characters-list :chars="chars"/>
-  </template>
+  <characters-list v-if="chars.length" :chars="chars"/>
+  <h2 class="favorites">No favorites yet</h2>
+</template>
 
 <script setup>
   import { useStore } from 'vuex';

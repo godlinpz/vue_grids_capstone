@@ -1,53 +1,23 @@
 import { createStore } from 'vuex'
+import api from '../api.mjs';
 
 export default createStore({
   state: {
     characters: [
-      {id: 1, name: 'Tanya', species: 'Human', status: 'Alive', location: 'Earth', episode: '1'},
-      {id: 2, name: 'Dima', species: 'Human', status: 'Dead', location: 'Mars', episode: '2'},
-      {id: 3, name: 'Iva', species: 'Alien', status: 'Alive', location: 'Venus', episode: '3'},
-      {id: 4, name: 'Kirill', species: 'Human', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 5, name: 'Sasha', species: 'Alien', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 6, name: 'Vasya', species: 'Human', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 7, name: 'Petya', species: 'Alien', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 8, name: 'Kolya', species: 'Human', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 9, name: 'Katya', species: 'Alien', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 10, name: 'Denver', species: 'Animal', status: 'Alive', location: 'Earth', episode: '4'},
-      {id: 11, name: 'Moscow', species: 'Alien', status: 'Alive', location: 'Earth', episode: '4'},
     ],
     charactersTotal: 11,
     favorites: [
-      {id: 3, name: 'Iva', species: 'Alien', status: 'Alive', location: 'Venus', episode: '3'},
-      {id: 9, name: 'Katya', species: 'Alien', status: 'Alive', location: 'Earth', episode: '4'},
     ],
     currentTypeFilter: 'All',
     currentNameFilter: '',
+    loading: true,
+    currentCharacter: null,
   },
   getters: {
-    charactersTotal: (state) => {
-      const total = state.currentNameFilter
-        ? state.characters.filter(c => c.name.toLowerCase().includes(state.currentNameFilter)).length
-        : (state.currentTypeFilter === 'All') 
-        ? state.characters.length 
-        : state.characters.filter(c => c.species === state.currentTypeFilter).length;
-
-        return total;
-    },
-    characters: (state) => (page, pageSize = 3) => {
-      const start = (page - 1) * pageSize;
-      let chars = state.characters;
-      if (state.currentNameFilter) {
-        chars = chars.filter(c => c.name.toLowerCase().includes(state.currentNameFilter));
-      }
-      else if (state.currentTypeFilter !== 'All') {
-        chars = chars.filter(c => c.species === state.currentTypeFilter);
-      }
-      return chars.slice(start, start + pageSize );
-    },
-    characterById: (state) => (id) => {
-      console.log('characterById', id);
-      return state.characters.find(char => char.id === Number(id) );
-    },
+    charactersTotal: (state) => state.charactersTotal,
+    loading: (state) => state.loading,
+    characters: (state) => () => state.characters,
+    currentCharacter: (state) => state.currentCharacter,
     favorites: (state) => state.favorites,
     favoritesTotal: (state) => state.favorites.length,
     isFavorite: (state) => (id) => state.favorites.find(char => char.id === id),
@@ -55,6 +25,9 @@ export default createStore({
   mutations: {
     addFavorite(state, char) {
       state.favorites = state.favorites.filter(c => c.id !== char.id).concat([char]);
+    },
+    setFavorites(state, chars) {
+      state.favorites = chars;
     },
     removeFavorite(state, char) {
       state.favorites = state.favorites.filter(c => c.id !== char.id);
@@ -65,19 +38,54 @@ export default createStore({
     setNameFilter(state, search) {
       state.currentNameFilter = search.toLowerCase();
     },
+    setCharacters(state, chars) {
+      state.characters = chars;
+    },
+    setCharactersTotal(state, charactersTotal) {
+      state.charactersTotal = charactersTotal;
+    },
+    setCurrentCharacter(state, character) {
+      state.currentCharacter = character;
+    },
+    setLoading(state, loading) {
+      state.loading = loading;
+    },
   },
   actions: {
-    addFavorite(context, char) {
-      context.commit('addFavorite', char);
+    addFavorite({commit, dispatch}, char) {
+      commit('addFavorite', char);
+      dispatch('saveFavorites');
     },
-    removeFavorite(context, char) {
-      context.commit('removeFavorite', char);
+    removeFavorite({commit, dispatch}, char) {
+      commit('removeFavorite', char);
+      dispatch('saveFavorites');
     },
     setTypeFilter(context, typeName) {
       context.commit('setTypeFilter', typeName);
     },
     setNameFilter(context, search) {
       context.commit('setNameFilter', search);
+    },
+    loadCharacters: ({state, commit}, page = 1) => {
+      commit('setLoading', true);
+      api.getCharacters(page, state.currentNameFilter, state.currentTypeFilter === 'All' ? '' : state.currentTypeFilter)
+        .then( ({ characters, count }) => {
+          commit('setCharacters', characters);
+          commit('setCharactersTotal', count);
+        }).finally(() => commit('setLoading', false));
+    },
+    loadCurrentCharacter: ({commit}, id) => {
+      commit('setLoading', true);
+      api.getCharacter(id)
+        .then(character => {
+          commit('setCurrentCharacter', character);
+        }).finally(() => commit('setLoading', false));
+    },
+    loadFavorites: ({commit}) => {
+      commit('setFavorites', JSON.parse(localStorage.getItem('favorites')) || []);
+    },
+    saveFavorites: ({state}) => {
+      localStorage.setItem('favorites', JSON.stringify(state.favorites));
     },
   },
 })

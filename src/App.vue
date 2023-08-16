@@ -5,6 +5,9 @@
 
 <script setup>
   import MainHeader from '@/components/MainHeader';
+  import { useStore } from 'vuex';
+  const store = useStore();
+  store.dispatch('loadFavorites');
 
 </script>
 
